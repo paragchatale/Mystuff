@@ -1,7 +1,1 @@
-Hi
-
-just for handson 
-
-thanks :)
-
-gona explore GitHub
+welcome to Git
