@@ -1,0 +1,102 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Resources": {
+        "ExerciseLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Handler": "exercise_lambda.handler",
+                "Runtime": "python3.8",
+                "Code": {
+                    "ZipFile": {
+                        "Fn::Join": [
+                            "\n",
+                            [
+                                "import boto3",
+                                "",
+                                "def handler(event, context):",
+                                "    ssm = boto3.client('ssm')",
+                                "    s3 = boto3.client('s3')",
+                                "    parameter_name = '/UserName'",
+                                "    response = ssm.get_parameter(Name=parameter_name)",
+                                "    username = response['Parameter']['Value']",
+                                "",
+                                "    bucket_name = 'parag1705'",
+                                "    file_key = 'username.txt'",
+                                "    file_content = f'Username: {username}'",
+                                "",
+                                "    s3.put_object(Bucket=bucket_name, Key=file_key, Body=file_content.encode())",
+                                "",
+                                "    return {",
+                                "        'statusCode': 200,",
+                                "        'body': 'File created in S3 with username'",
+                                "    }"
+                            ]
+                        ]
+                    }
+                },
+                "Timeout": 30,
+                "MemorySize": 128,
+                "Role": { "Fn::GetAtt": ["LambdaExecutionRole", "Arn"] },
+                "TracingConfig": {
+                    "Mode": "Active"
+                }
+            }
+      },
+      "LambdaExecutionRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [{
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "lambda.amazonaws.com"
+                  },
+                  "Action": "sts:AssumeRole"
+                }]
+              },
+              "Policies": [{
+                "PolicyName": "LambdaExecutionPolicy",
+                "PolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [{
+                      "Effect": "Allow",
+                      "Action": [
+                        "ssm:GetParameter"
+                      ],
+                      "Resource": [
+                        { "Fn::Sub": "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/UserName" }
+                      ]
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "s3:PutObject"
+                      ],
+                      "Resource": [
+                        { "Fn::Join": [ "", [ "arn:aws:s3:::parag1705", "/*" ] ] }
+                      ]
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "logs:CreateLogGroup",
+                        "logs:CreateLogStream",
+                        "logs:PutLogEvents"
+                      ],
+                      "Resource": "arn:aws:logs:*:*:*"
+                    }
+                  ]
+                }
+              }]
+            }
+      }
+    },
+    "Outputs": {
+      "LambdaFunctionArn": {
+        "Description": "ARN of the Lambda function",
+        "Value": { "Ref": "ExerciseLambdaFunction" }
+      }
+    }
+  }
+  
